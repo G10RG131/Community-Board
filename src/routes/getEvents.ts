@@ -1,21 +1,12 @@
-// src/routes/getEvents.ts
 import { Router } from "express";
-import { pool } from "../db";
+import { getEvents } from "../data/eventsStore";
 
 const router = Router();
 
-/**
- * GET /events
- * Fetch all events from Postgres, ordered by date ascending.
- */
 router.get("/", async (_req, res, next) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT id, title, date, location, description
-       FROM events
-       ORDER BY date ASC`
-    );
-    res.json(rows);
+    const events = await getEvents();
+    res.json(events);
   } catch (err) {
     next(err);
   }
