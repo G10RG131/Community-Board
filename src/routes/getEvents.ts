@@ -1,14 +1,26 @@
 import { Router } from "express";
+import { z } from "zod";
 import {
   getEvents,
   getEventById,
   deleteEventById,
   updateEventById
 } from "../data/eventsStore";
-
+import { validateBody } from "../middleware/validate";
 import type { Event } from "../types/event";
 
 const router = Router();
+
+// Zod schema for validating PATCH request bodies (all fields optional)
+const EventUpdateSchema = z.object({
+  title: z.string().min(1).optional(),
+  date: z
+    .string()
+    .refine((d) => !isNaN(Date.parse(d)), { message: "Invalid date format" })
+    .optional(),
+  location: z.string().min(1).optional(),
+  description: z.string().optional(),
+});
 
 /** GET /events – list all events */
 router.get("/", async (_req, res, next) => {
@@ -47,12 +59,14 @@ router.delete("/:id", async (req, res, next) => {
 });
 
 /**
- * PATCH /events/:id – partially update an event.
+ * PATCH /events/:id – partially update an event with validation
  */
-router.patch("/:id", async (req, res, next) => {
-    const updates = req.body as Partial<Omit<Event, "id">>;
+router.patch(
+  "/:id",
+  validateBody(EventUpdateSchema),
+  async (req, res, next) => {
     try {
-      const updated = await updateEventById(req.params.id, updates);
+      const updated = await updateEventById(req.params.id, req.body);
       if (!updated) {
         return res.status(404).json({ error: "Event not found" });
       }
@@ -60,6 +74,7 @@ router.patch("/:id", async (req, res, next) => {
     } catch (err) {
       next(err);
     }
-  });
+  }
+);
 
 export default router;
