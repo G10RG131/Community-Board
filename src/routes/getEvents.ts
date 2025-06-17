@@ -3,7 +3,9 @@ import {
   getEvents,
   getEventById,
   deleteEventById,
+  updateEventById
 } from "../data/eventsStore";
+
 import type { Event } from "../types/event";
 
 const router = Router();
@@ -43,5 +45,21 @@ router.delete("/:id", async (req, res, next) => {
     next(err);
   }
 });
+
+/**
+ * PATCH /events/:id – partially update an event.
+ */
+router.patch("/:id", async (req, res, next) => {
+    const updates = req.body as Partial<Omit<Event, "id">>;
+    try {
+      const updated = await updateEventById(req.params.id, updates);
+      if (!updated) {
+        return res.status(404).json({ error: "Event not found" });
+      }
+      res.json(updated);
+    } catch (err) {
+      next(err);
+    }
+  });
 
 export default router;

@@ -56,3 +56,31 @@ export async function getEventById(id: string): Promise<Event | null> {
     return rows[0] ?? null;
   }
   
+ /**
+ * Update any subset of {title, date, location, description} on an event.
+ * Returns the updated row, or null if the ID wasn’t found.
+ */
+export async function updateEventById(
+    id: string,
+    updates: Partial<Omit<Event, "id">>
+  ): Promise<Event | null> {
+    const { rows } = await pool.query<Event>(
+      `UPDATE events
+         SET
+           title       = COALESCE($2, title),
+           date        = COALESCE($3, date),
+           location    = COALESCE($4, location),
+           description = COALESCE($5, description)
+       WHERE id = $1
+       RETURNING id, title, date, location, description`,
+      [
+        id,
+        updates.title,
+        updates.date,
+        updates.location,
+        updates.description,
+      ]
+    );
+    return rows[0] ?? null;
+  }
+   
