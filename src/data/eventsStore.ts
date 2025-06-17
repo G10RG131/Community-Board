@@ -7,3 +7,6 @@ import { Event } from "../types/event";
  * We’ll swap this out for a JSON file later.
  */
 export const events: Event[] = [];
+
+// ensure module
+export {};
