@@ -24,3 +24,19 @@ export async function getEvents(): Promise<Event[]> {
   );
   return rows;
 }
+
+/**
+ * Fetch a single event by its ID.
+ * @param id Event UUID
+ * @returns The event, or null if none found.
+ */
+export async function getEventById(id: string): Promise<Event | null> {
+    const { rows } = await pool.query<Event>(
+      `SELECT id, title, date, location, description
+       FROM events
+       WHERE id = $1`,
+      [id]
+    );
+    return rows[0] ?? null;
+  }
+  
