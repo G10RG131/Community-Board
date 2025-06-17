@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getEvents } from "../data/eventsStore";
+import { getEvents, getEventById } from "../data/eventsStore";
 
 const router = Router();
 
