@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import { Router, Request, Response, NextFunction } from "express";
 import { z } from "zod";
 import type { Event } from "../types/event";
 import { events } from "../data/eventsStore";
@@ -14,7 +14,7 @@ const EventSchema = z.object({
   description: z.string().optional(),
 });
 
-router.post("/", (req: Request, res: Response) => {
+router.post("/", (req: Request, res: Response, next: NextFunction) => {
   const parsed = EventSchema.safeParse(req.body);
   if (!parsed.success) {
     return res.status(400).json({ error: parsed.error.format() });
