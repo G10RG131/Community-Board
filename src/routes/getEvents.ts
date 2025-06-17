@@ -1,8 +1,14 @@
 import { Router } from "express";
-import { getEvents, getEventById, deleteEventById } from "../data/eventsStore";
+import {
+  getEvents,
+  getEventById,
+  deleteEventById,
+} from "../data/eventsStore";
+import type { Event } from "../types/event";
 
 const router = Router();
 
+/** GET /events – list all events */
 router.get("/", async (_req, res, next) => {
   try {
     const events = await getEvents();
@@ -12,20 +18,30 @@ router.get("/", async (_req, res, next) => {
   }
 });
 
-/**
- * DELETE /events/:id – Remove an event by ID.
- * Responds 404 if not found, or 200 with the deleted row.
- */
-router.delete("/:id", async (req, res, next) => {
-    try {
-      const deleted = await deleteEventById(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({ error: "Event not found" });
-      }
-      res.json(deleted);
-    } catch (err) {
-      next(err);
+/** GET /events/:id – fetch a single event by ID */
+router.get("/:id", async (req, res, next) => {
+  try {
+    const event = await getEventById(req.params.id);
+    if (!event) {
+      return res.status(404).json({ error: "Event not found" });
     }
-  });
+    res.json(event);
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** DELETE /events/:id – remove an event by ID */
+router.delete("/:id", async (req, res, next) => {
+  try {
+    const deleted = await deleteEventById(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+    res.json(deleted);
+  } catch (err) {
+    next(err);
+  }
+});
 
 export default router;
