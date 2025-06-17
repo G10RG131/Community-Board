@@ -26,6 +26,22 @@ export async function getEvents(): Promise<Event[]> {
 }
 
 /**
+ * Delete the event with the given ID.
+ * @param id Event UUID
+ * @returns The deleted event, or null if none existed.
+ */
+export async function deleteEventById(id: string): Promise<Event | null> {
+    const { rows } = await pool.query<Event>(
+      `DELETE FROM events
+       WHERE id = $1
+       RETURNING id, title, date, location, description`,
+      [id]
+    );
+    return rows[0] ?? null;
+  }
+  
+
+/**
  * Fetch a single event by its ID.
  * @param id Event UUID
  * @returns The event, or null if none found.
