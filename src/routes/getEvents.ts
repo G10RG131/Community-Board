@@ -1,8 +1,5 @@
 import { Router } from "express";
-import { Event } from "../types/event";
-
-// In-memory store (will swap to file later)
-const events: Event[] = [];
+import { events } from "../data/eventsStore";
 
 const router = Router();
 
