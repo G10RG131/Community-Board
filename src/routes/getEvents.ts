@@ -11,16 +11,20 @@ import type { Event } from "../types/event";
 
 const router = Router();
 
-// Zod schema for validating PATCH request bodies (all fields optional)
-const EventUpdateSchema = z.object({
-  title: z.string().min(1).optional(),
-  date: z
-    .string()
-    .refine((d) => !isNaN(Date.parse(d)), { message: "Invalid date format" })
-    .optional(),
-  location: z.string().min(1).optional(),
-  description: z.string().optional(),
-});
+// Zod schema for validating PATCH request bodies (all fields optional) and ensuring at least one field
+const EventUpdateSchema = z
+  .object({
+    title:       z.string().min(1).optional(),
+    date:        z
+      .string()
+      .refine((d) => !isNaN(Date.parse(d)), { message: "Invalid date format" })
+      .optional(),
+    location:    z.string().min(1).optional(),
+    description: z.string().optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "At least one field must be provided",
+  });
 
 /** GET /events – list all events */
 router.get("/", async (_req, res, next) => {
