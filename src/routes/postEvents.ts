@@ -1,39 +1,37 @@
 // src/routes/postEvents.ts
-import { Router, RequestHandler } from "express";
+import { Router } from "express";
 import { z } from "zod";
-import { pool } from "../db";
+import type { Event } from "../types/event";
+import { createEvent } from "../data/eventsStore";
+import { validateBody } from "../middleware/validate";
 
 const router = Router();
 
-// validate incoming payload
+// Zod schema for validating incoming event data
 const EventSchema = z.object({
-  title: z.string().min(1),
-  date: z.string().refine(d => !isNaN(Date.parse(d)), { message: "Invalid date format" }),
-  location: z.string().min(1),
+  title:       z.string().min(1),
+  date:        z.string().refine((d) => !isNaN(Date.parse(d)), { message: "Invalid date format" }),
+  location:    z.string().min(1),
   description: z.string().optional(),
 });
 
-const postEventsHandler: RequestHandler = async (req, res, next) => {
-  const parsed = EventSchema.safeParse(req.body);
-  if (!parsed.success) {
-    return res.status(400).json({ error: parsed.error.format() });
+/**
+ * POST /events
+ *  - Validates the body against EventSchema
+ *  - Inserts the new event into Postgres
+ *  - Returns the created row
+ */
+router.post(
+  "/",
+  validateBody(EventSchema),
+  async (req, res, next) => {
+    try {
+      const created = await createEvent(req.body);
+      res.status(201).json(created);
+    } catch (err) {
+      next(err);
+    }
   }
+);
 
-  try {
-    const { title, date, location, description } = parsed.data;
-    // INSERT ... RETURNING * to get the full row back
-    const { rows } = await pool.query(
-      `INSERT INTO events (id, title, date, location, description)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4)
-       RETURNING id, title, date, location, description`,
-      [title, date, location, description]
-    );
-
-    res.status(201).json(rows[0]);
-  } catch (err) {
-    next(err);
-  }
-};
-
-router.post("/", postEventsHandler);
 export default router;
