@@ -1,8 +1,9 @@
+// src/middleware/errorHandler.ts
 import { Request, Response, NextFunction } from "express";
 
 /**
- * Final error handler: any error passed to next(err)
- * ends up here, with a 500 JSON response.
+ * Catches anything passed to next(err)
+ * and returns a 500 JSON.
  */
 export function errorHandler(
   err: unknown,
