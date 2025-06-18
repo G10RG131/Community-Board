@@ -1,25 +1,29 @@
 import express from "express";
 import cors from "cors";
 import morgan from "morgan";
+
 import getEventsRouter from "./routes/getEvents";
 import postEventsRouter from "./routes/postEvents";
 import { errorHandler } from "./middleware/errorHandler";
 
 const app = express();
 
-// Middleware
-app.use(cors());                // allow cross-origin requests
-app.use(express.json());        // parse JSON bodies
-app.use(morgan("tiny"));        // simple HTTP request logger
+// 1) pre-route middleware
+app.use(cors());
+app.use(express.json());
+app.use(morgan("tiny"));
 
-// Routes
+// 2) your two routers
 app.use("/events", getEventsRouter);
 app.use("/events", postEventsRouter);
 
-// Centralized error handler
+// 3) 404 for anything else
+app.use((_req, res) => res.status(404).json({ error: "Not Found" }));
+
+// 4) global error handler
 app.use(errorHandler);
 
-// Start server
+// 5) start
 const PORT = process.env.PORT ?? 4000;
 app.listen(PORT, () => {
   console.log(`🗓️  Community Events backend listening on http://localhost:${PORT}`);
