@@ -6,7 +6,7 @@ import {
   deleteEventById,
   updateEventById
 } from "../data/eventsStore";
-import { validateBody } from "../middleware/validate";
+import { validateBody } from "../middleware/validateBody";
 import type { Event } from "../types/event";
 
 const router = Router();

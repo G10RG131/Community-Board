@@ -3,7 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import type { Event } from "../types/event";
 import { createEvent } from "../data/eventsStore";
-import { validateBody } from "../middleware/validate";
+import { validateBody } from "../middleware/validateBody";
 
 const router = Router();
 
