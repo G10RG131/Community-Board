@@ -30,6 +30,7 @@
 }
 
 .login-button:hover {
+  color: #28d36f;
   background-color: #0b7dda;
 }
 

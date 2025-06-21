@@ -1,55 +1,175 @@
+/* Main container */
 .user-dashboard {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
+  max-width: 850px;
+  margin: 30px auto;
+  padding: 30px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
 }
 
-.user-dashboard h2 {
-  text-align: center;
-  margin-bottom: 30px;
-  color: #333;
-}
-
+/* Form styling */
 .user-dashboard form {
-  display: grid;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
 }
 
+/* Form groups */
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
 }
 
 .form-group label {
   font-weight: 600;
-  color: #444;
+  color: #2c3e50;
+  font-size: 1.05rem;
 }
 
 .form-group input,
-.form-group textarea {
-  padding: 10px;
+.form-group textarea,
+.form-group select {
+  padding: 14px;
   border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 16px;
+  border-radius: 6px;
+  font-size: 1.05rem;
+  transition: border-color 0.3s;
 }
 
-.form-group textarea {
-  min-height: 100px;
-  resize: vertical;
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #2196F3;
 }
 
-.submit-btn {
-  padding: 12px;
-  background-color: #4CAF50;
+/* Volunteer positions section */
+.volunteer-positions {
+  margin-top: 20px;
+  border: 1px solid #e0e0e0;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.position-input-group {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.position-input-group input {
+  flex: 1;
+  padding: 14px;
+  font-size: 1.05rem;
+}
+
+/* Add Position Button */
+.add-position-btn {
+  padding: 0 25px;
+  background: #2196F3;
   color: white;
   border: none;
-  border-radius: 4px;
-  font-size: 16px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s;
+  font-size: 1rem;
+  font-weight: 600;
+  height: 48px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.add-position-btn:hover {
+  background: #0b7dda;
+  transform: translateY(-2px);
+}
+
+.add-position-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Position tags */
+.positions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.position-tag {
+  background: #e3f2fd;
+  padding: 10px 16px;
+  border-radius: 20px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.position-tag .remove-position {
+  background: transparent;
+  border: none;
+  color: #f44336;
+  cursor: pointer;
+  margin-left: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  padding: 0 4px;
+}
+
+.position-tag .remove-position:hover {
+  color: #d32f2f;
+}
+
+/* Create Event Button */
+.submit-btn {
+  background: #2196F3;
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 20px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
 }
 
 .submit-btn:hover {
-  background-color: #3e8e41;
+  background: #0b7dda;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  transform: translateY(-2px);
+}
+
+.submit-btn:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .user-dashboard {
+    padding: 20px;
+  }
+  
+  .position-input-group {
+    flex-direction: column;
+  }
+  
+  .position-input-group button,
+  .submit-btn {
+    width: 100%;
+    padding: 16px;
+  }
 }

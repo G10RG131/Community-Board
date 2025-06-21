@@ -2,36 +2,44 @@ import React from 'react';
 import EventCard from '../components/EventCard/EventCard';
 import './EventsPage.css';
 
-const EventsPage = () => {
+export default function EventsPage() {
   const events = [
     {
       id: 1,
-      title: 'Tech Conference 2023',
-      date: 'November 15-17, 2023',
-      location: 'San Francisco',
-      description: 'Annual technology conference featuring keynote speakers and workshops about the latest trends in software development and AI.',
-      image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30'
+      title: "Community Cleanup",
+      date: "November 20, 2023",
+      location: "City Park, Main Street",
+      description: "Join us for our annual community cleanup day. We'll provide all necessary equipment and refreshments for volunteers.",
+      image: "https://images.unsplash.com/photo-1600566752225-555bdd87c640?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
+      volunteerPositions: [
+        "Trash Collector",
+        "Recycling Supervisor",
+        "Registration Volunteer"
+      ]
     },
     {
       id: 2,
-      title: 'Music Festival',
-      date: 'December 10-12, 2023',
-      location: 'New York',
-      description: 'Three days of live performances from top artists around the world across multiple genres including rock, jazz, and electronic music.',
-      image: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3'
+      title: "Food Drive",
+      date: "December 5-7, 2023",
+      location: "Community Center",
+      description: "Help us collect and distribute food to families in need during the holiday season.",
+      image: "https://images.unsplash.com/photo-1507048331197-7d4ac70811cf?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80",
+      volunteerPositions: [
+        "Food Sorter",
+        "Donation Collector",
+        "Delivery Driver"
+      ]
     }
   ];
 
   return (
     <div className="events-page">
       <h1>Upcoming Events</h1>
-      <div className="events-container">
+      <div className="events-grid">
         {events.map(event => (
           <EventCard key={event.id} event={event} />
         ))}
       </div>
     </div>
   );
-};
-
-export default EventsPage;
+}
