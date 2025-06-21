@@ -1,0 +1,53 @@
+.register-page {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(100vh - 80px);
+  background-color: #f5f5f5;
+  padding: 20px;
+}
+
+.register-container {
+  width: 100%;
+  max-width: 450px;
+  background: white;
+  border-radius: 10px;
+  padding: 40px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.register-container h2 {
+  color: #333;
+  margin-bottom: 25px;
+  text-align: center;
+  font-size: 28px;
+}
+
+.login-link {
+  margin-top: 20px;
+  text-align: center;
+  color: #666;
+  font-size: 15px;
+}
+
+.login-link a {
+  color: #4CAF50;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s;
+}
+
+.login-link a:hover {
+  color: #3e8e41;
+  text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+  .register-container {
+    padding: 30px 20px;
+  }
+  
+  .register-container h2 {
+    font-size: 24px;
+  }
+}

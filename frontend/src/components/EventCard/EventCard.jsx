@@ -7,11 +7,13 @@ const EventCard = ({ event }) => {
       <div 
         className="event-image" 
         style={{ backgroundImage: `url(${event.image})` }}
-      ></div>
+      />
       <div className="event-details">
         <h3>{event.title}</h3>
-        <p className="event-date">{event.date}</p>
-        <p className="event-location">{event.location}</p>
+        <p className="event-meta">
+          <span className="event-date">{event.date}</span>
+          <span className="event-location">{event.location}</span>
+        </p>
         <p className="event-description">{event.description}</p>
       </div>
     </div>

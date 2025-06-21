@@ -8,7 +8,7 @@
 
 .event-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
 
 .event-image {
@@ -18,21 +18,24 @@
 }
 
 .event-details {
-  padding: 1.5rem;
+  padding: 20px;
 }
 
 .event-details h3 {
-  margin-bottom: 0.5rem;
-  color: var(--dark-color);
+  margin: 0 0 10px 0;
+  color: #242424;
+  font-size: 1.5rem;
 }
 
-.event-date, .event-location {
+.event-meta {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 15px;
   color: #666;
   font-size: 0.9rem;
-  margin-bottom: 0.5rem;
 }
 
 .event-description {
   color: #333;
-  margin-top: 1rem;
+  line-height: 1.5;
 }
