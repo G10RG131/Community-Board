@@ -55,8 +55,56 @@
   transform: translateY(-3px);
 }
 
+.logout-btn {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+/* Mobile menu styles */
+.menu-icon {
+  display: none;
+  color: #fff;
+}
+
 @media screen and (max-width: 960px) {
   .navbar-container {
     padding: 0 20px;
+  }
+
+  .nav-menu {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 90vh;
+    position: absolute;
+    top: 80px;
+    left: -100%;
+    opacity: 1;
+    transition: all 0.5s ease;
+  }
+
+  .nav-menu.active {
+    background: #242424;
+    left: 0;
+    opacity: 1;
+    transition: all 0.5s ease;
+    z-index: 1;
+  }
+
+  .nav-item {
+    width: 100%;
+  }
+
+  .menu-icon {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    transform: translate(-100%, 60%);
+    font-size: 1.8rem;
+    cursor: pointer;
   }
 }
