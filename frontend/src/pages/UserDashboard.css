@@ -1,0 +1,54 @@
+/* BOOTSTRAP ENHANCED USER DASHBOARD STYLING */
+
+/* Custom styling for volunteer position tags */
+.position-tag-custom {
+  padding: 0.5rem 1rem 0.5rem 0.75rem !important;
+  margin: 0.25rem;
+  border-radius: 1rem;
+  position: relative;
+}
+
+/* Ensure the close button doesn't interfere with tag text */
+.position-tag-custom {
+  padding-right: 1.5rem !important;
+}
+
+/* Custom card styling */
+.card {
+  border-radius: 12px;
+  border: none;
+}
+
+.card-header {
+  border-radius: 12px 12px 0 0 !important;
+}
+
+/* Form enhancements */
+.form-label {
+  color: #2d3748;
+}
+
+.form-control:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Button hover effects */
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+}

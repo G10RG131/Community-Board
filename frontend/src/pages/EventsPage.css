@@ -1,35 +1,32 @@
-.events-page {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 2rem;
+/* BOOTSTRAP ENHANCED EVENTS PAGE STYLING */
+
+/* Remove most custom styles since Bootstrap handles layout */
+/* Keep only specific customizations */
+
+/* Custom title styling */
+.display-4 {
+  color: #2d3748 !important;
 }
 
-.events-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
+/* Custom alert styling for better visual consistency */
+.alert {
+  border-radius: 10px;
 }
 
-.events-header h1 {
-  color: var(--dark-color);
+/* Custom spinner styling */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
 }
 
-.login-link {
-  padding: 0.5rem 1rem;
-  background-color: var(--primary-color);
-  color: white;
-  text-decoration: none;
-  border-radius: 4px;
-  transition: background-color 0.3s;
-}
-
-.login-link:hover {
-  background-color: var(--secondary-color);
-}
-
-.events-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
+/* Ensure proper spacing on mobile */
+@media (max-width: 576px) {
+  .container {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  
+  .display-4 {
+    font-size: 2rem !important;
+  }
 }

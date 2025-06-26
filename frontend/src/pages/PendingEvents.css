@@ -1,0 +1,88 @@
+.pending-events {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.pending-events h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.events-list {
+  display: grid;
+  gap: 20px;
+}
+
+.event-card {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.event-image {
+  height: 200px;
+  background-size: cover;
+  background-position: center;
+}
+
+.event-details {
+  padding: 20px;
+}
+
+.event-details h3 {
+  margin-top: 0;
+  color: #333;
+}
+
+.event-details p {
+  margin: 8px 0;
+  color: #555;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.approve-btn, .reject-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.approve-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.reject-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.approve-btn:hover {
+  background-color: #3e8e41;
+}
+
+.reject-btn:hover {
+  background-color: #d32f2f;
+}
+
+@media (max-width: 768px) {
+  .event-card {
+    grid-template-columns: 1fr;
+  }
+  
+  .event-image {
+    height: 150px;
+  }
+}

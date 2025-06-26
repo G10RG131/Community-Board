@@ -1,83 +1,56 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import '../components/Auth/Login.css';
+import { Link, useNavigate } from 'react-router-dom';
+import LoginForm from '../components/Auth/LoginForm';
+import './LoginPage.css';
 
 const LoginPage = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (credentials) => {
+    console.log('Login attempt:', credentials);
     setError('');
-
-    // Basic validation
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
-      return;
-    }
-
+    setLoading(true);
+    
     try {
-      // Replace with actual authentication logic
-      console.log('Login attempt:', formData);
-      
-      // Simulate successful login
-      navigate('/'); // Redirect to home after login
+      const response = await fetch('http://localhost:4000/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(credentials)
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        console.log('Login successful:', data.user);
+        // Store user info in localStorage
+        localStorage.setItem('user', JSON.stringify(data.user));
+        // Trigger a storage event for navbar to update
+        window.dispatchEvent(new Event('storage'));
+        // Redirect to home page
+        navigate('/');
+      } else {
+        setError(data.message || 'Login failed');
+      }
     } catch (err) {
-      setError('Invalid credentials. Please try again.');
+      console.error('Login error:', err);
+      setError('Failed to connect to server. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="login-page">
       <div className="login-container">
-        <h2 className="login-title">Admin Login</h2>
-        {error && <div className="error-message">{error}</div>}
-        
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="email" className="form-label">Email</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              className="form-input"
-              value={formData.email}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="password" className="form-label">Password</label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              className="form-input"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-          </div>
-          
-          <button type="submit" className="login-button">Login</button>
-        </form>
-        
-        <div className="login-footer">
-          <p>Don't have an account? <a href="/register" className="login-link">Register</a></p>
-        </div>
+        <h2>Login</h2>
+        <LoginForm onLogin={handleLogin} error={error} loading={loading} />
+        <p className="register-link">
+          Don't have an account? <Link to="/register">Register here</Link>
+        </p>
       </div>
     </div>
   );
