@@ -10,6 +10,7 @@ exports.checkEventOwnership = checkEventOwnership;
 // src/data/eventsStore.ts
 const crypto_1 = require("crypto");
 const db_1 = require("../db");
+const volunteerStore_1 = require("./volunteerStore");
 async function createEvent(input, userId) {
     const newId = (0, crypto_1.randomUUID)();
     const { rows } = await db_1.pool.query(`INSERT INTO events (id, title, date, location, description, image, volunteer_positions, user_id)
@@ -158,6 +159,10 @@ async function getEventById(id) {
 * Returns the updated row, or null if the ID wasn’t found.
 */
 async function updateEventById(id, updates) {
+    // If volunteer positions are being updated, clean up registrations for removed positions
+    if (updates.volunteerPositions !== undefined) {
+        await (0, volunteerStore_1.cleanupRemovedPositions)(id, updates.volunteerPositions);
+    }
     const { rows } = await db_1.pool.query(`UPDATE events
          SET
            title              = COALESCE($2, title),

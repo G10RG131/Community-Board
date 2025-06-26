@@ -4,12 +4,14 @@ import './MyEventsPage.css';
 
 const MyEventsPage = () => {
   const [events, setEvents] = useState([]);
+  const [volunteers, setVolunteers] = useState({}); // volunteers organized by eventId
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editingEvent, setEditingEvent] = useState(null);
 
   useEffect(() => {
     fetchMyEvents();
+    fetchVolunteers();
   }, []);
 
   const fetchMyEvents = async () => {
@@ -38,6 +40,36 @@ const MyEventsPage = () => {
     }
   };
 
+  const fetchVolunteers = async () => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      const response = await fetch('http://localhost:4000/volunteers/my-events', {
+        headers: {
+          'x-user-id': user.id?.toString() || '',
+          'x-user-name': user.name || '',
+          'x-user-email': user.email || ''
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch volunteers');
+      }
+
+      const data = await response.json();
+      
+      // Convert array to object keyed by eventId
+      const volunteersMap = {};
+      data.forEach(({ eventId, volunteers }) => {
+        volunteersMap[eventId] = volunteers;
+      });
+      
+      setVolunteers(volunteersMap);
+    } catch (err) {
+      console.error('Error fetching volunteers:', err);
+    }
+  };
+
   const handleDeleteEvent = async (eventId) => {
     if (!window.confirm('Are you sure you want to delete this event?')) {
       return;
@@ -61,6 +93,10 @@ const MyEventsPage = () => {
 
       // Remove the event from the list
       setEvents(events.filter(event => event.id !== eventId));
+      // Remove volunteers for this event
+      const updatedVolunteers = { ...volunteers };
+      delete updatedVolunteers[eventId];
+      setVolunteers(updatedVolunteers);
     } catch (err) {
       alert('Failed to delete event');
       console.error('Error:', err);
@@ -98,6 +134,9 @@ const MyEventsPage = () => {
       ));
       
       setEditingEvent(null);
+      
+      // Refresh volunteers in case positions changed
+      fetchVolunteers();
     } catch (err) {
       alert('Failed to update event');
       console.error('Error:', err);
@@ -134,7 +173,33 @@ const MyEventsPage = () => {
           <div className="events-grid">
             {events.map((event) => (
               <div key={event.id} className="event-card-container">
-                <EventCard event={event} />
+                <EventCard event={event} showVolunteerActions={false} />
+                
+                {/* Volunteer Registrations Section */}
+                {volunteers[event.id] && volunteers[event.id].length > 0 && (
+                  <div className="volunteers-section">
+                    <h4>Volunteer Registrations ({volunteers[event.id].length})</h4>
+                    <div className="volunteers-list">
+                      {volunteers[event.id].map((volunteer) => (
+                        <div key={`${volunteer.id}`} className="volunteer-item">
+                          <span className="volunteer-name">{volunteer.userName}</span>
+                          <span className="volunteer-position">{volunteer.position}</span>
+                          <span className="volunteer-date">
+                            {new Date(volunteer.registeredAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Show when no volunteers have registered yet */}
+                {(!volunteers[event.id] || volunteers[event.id].length === 0) && (
+                  <div className="no-volunteers">
+                    <p className="text-muted small">No volunteer registrations yet.</p>
+                  </div>
+                )}
+                
                 <div className="event-actions">
                   <button 
                     className="btn btn-secondary btn-sm"

@@ -165,6 +165,72 @@
   color: #666;
 }
 
+/* Volunteer Registrations Section */
+.volunteers-section {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.volunteers-section h4 {
+  margin: 0 0 0.75rem 0;
+  color: #495057;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.volunteers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.volunteer-item {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 0.75rem;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  align-items: center;
+}
+
+.volunteer-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.volunteer-position {
+  color: #007bff;
+  font-size: 0.9rem;
+  background: #e3f2fd;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.volunteer-date {
+  font-size: 0.8rem;
+  color: #666;
+  text-align: right;
+}
+
+.no-volunteers {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  text-align: center;
+}
+
+.no-volunteers p {
+  margin: 0;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .events-grid {

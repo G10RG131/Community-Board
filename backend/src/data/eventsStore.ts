@@ -2,6 +2,7 @@
 import { randomUUID } from "crypto";
 import { pool } from "../db";
 import type { Event } from "../types/event";
+import { cleanupRemovedPositions } from "./volunteerStore";
 
 export async function createEvent(
   input: Omit<Event, "id">,
@@ -172,6 +173,11 @@ export async function updateEventById(
     id: string,
     updates: Partial<Omit<Event, "id">>
   ): Promise<Event | null> {
+    // If volunteer positions are being updated, clean up registrations for removed positions
+    if (updates.volunteerPositions !== undefined) {
+      await cleanupRemovedPositions(id, updates.volunteerPositions);
+    }
+
     const { rows } = await pool.query(
       `UPDATE events
          SET
