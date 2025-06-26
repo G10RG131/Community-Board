@@ -7,7 +7,7 @@ export default function UserDashboard() {
     title: '',
     image: '',
     date: '',
-    time: '', // New time field
+    time: '', 
     location: '',
     description: '',
     volunteerPositions: []

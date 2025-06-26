@@ -8,5 +8,9 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const pg_1 = require("pg");
 exports.pool = new pg_1.Pool({
-    connectionString: process.env.PG_CONNECTION,
+    user: process.env.PGUSER,
+    password: process.env.PGPASSWORD,
+    host: process.env.PGHOST,
+    port: parseInt(process.env.PGPORT || "5432"),
+    database: process.env.PGDATABASE,
 });
