@@ -1,7 +1,9 @@
-// src/routes/volunteers.ts
 import { Router } from "express";
 import { z } from "zod";
 import {
+  createVolunteerProfile,
+  getPublicVolunteers,
+  getVolunteerProfile,
   registerVolunteer,
   getVolunteersByEventId,
   getVolunteersForUserEvents,
@@ -13,15 +15,40 @@ import { validateBody } from "../middleware/validateBody";
 
 const router = Router();
 
-// Volunteer registration schema
+// Schema Definitions
 const VolunteerRegistrationSchema = z.object({
   eventId: z.string().uuid("Invalid event ID"),
   position: z.string().min(1, "Position is required")
 });
 
-/** POST /volunteers/register → Register as volunteer for a position */
-router.post(
-  "/register",
+const VolunteerProfileSchema = z.object({
+  skills: z.array(z.string()).min(1, "At least one skill is required"),
+  age: z.number().min(16, "Must be at least 16 years old"),
+  gender: z.string().min(1, "Gender is required"),
+  contactEmail: z.string().email("Invalid email address")
+});
+
+// Public Routes
+router.get("/public", async (req, res, next) => {
+  try {
+    const volunteers = await getPublicVolunteers();
+    res.json(volunteers);
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.get("/event/:eventId", async (req, res, next) => {
+  try {
+    const volunteers = await getVolunteersByEventId(req.params.eventId);
+    res.json(volunteers);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Authenticated Routes
+router.post("/register",
   requireAuth,
   validateBody(VolunteerRegistrationSchema),
   async (req: AuthenticatedRequest, res, next) => {
@@ -29,9 +56,7 @@ router.post(
       const { eventId, position } = req.body;
       const userId = req.user!.id;
 
-      // Check if user is already registered for this position
-      const alreadyRegistered = await isUserRegistered(eventId, userId, position);
-      if (alreadyRegistered) {
+      if (await isUserRegistered(eventId, userId, position)) {
         return res.status(400).json({ 
           error: "You are already registered for this position" 
         });
@@ -45,9 +70,7 @@ router.post(
   }
 );
 
-/** DELETE /volunteers/unregister → Unregister from a volunteer position */
-router.delete(
-  "/unregister",
+router.delete("/unregister",
   requireAuth,
   validateBody(VolunteerRegistrationSchema),
   async (req: AuthenticatedRequest, res, next) => {
@@ -69,24 +92,42 @@ router.delete(
   }
 );
 
-/** GET /volunteers/event/:eventId → Get all volunteers for an event */
-router.get("/event/:eventId", async (req, res, next) => {
-  try {
-    const volunteers = await getVolunteersByEventId(req.params.eventId);
-    res.json(volunteers);
-  } catch (e) {
-    next(e);
+router.get("/my-events", 
+  requireAuth,
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      const eventVolunteers = await getVolunteersForUserEvents(req.user!.id);
+      res.json(eventVolunteers);
+    } catch (e) {
+      next(e);
+    }
   }
-});
+);
 
-/** GET /volunteers/my-events → Get volunteers for current user's events */
-router.get("/my-events", requireAuth, async (req: AuthenticatedRequest, res, next) => {
-  try {
-    const eventVolunteers = await getVolunteersForUserEvents(req.user!.id);
-    res.json(eventVolunteers);
-  } catch (e) {
-    next(e);
+// Volunteer Profile Routes
+router.post("/profile",
+  requireAuth,
+  validateBody(VolunteerProfileSchema),
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      const profile = await createVolunteerProfile(req.body, req.user!.id);
+      res.status(201).json(profile);
+    } catch (e) {
+      next(e);
+    }
   }
-});
+);
+
+router.get("/profile", 
+  requireAuth,
+  async (req: AuthenticatedRequest, res, next) => {
+    try {
+      const profile = await getVolunteerProfile(req.user!.id);
+      res.json(profile || null);
+    } catch (e) {
+      next(e);
+    }
+  }
+);
 
 export default router;

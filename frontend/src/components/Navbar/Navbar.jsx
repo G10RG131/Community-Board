@@ -7,9 +7,8 @@ const Navbar = () => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  // Check login status on component mount and when localStorage changes
   useEffect(() => {
-    const checkLoginStatus = () => {
+    const checkAuthStatus = () => {
       const userData = localStorage.getItem('user');
       if (userData) {
         try {
@@ -18,9 +17,7 @@ const Navbar = () => {
           setIsLoggedIn(true);
         } catch (error) {
           console.error('Error parsing user data:', error);
-          localStorage.removeItem('user');
-          setIsLoggedIn(false);
-          setUser(null);
+          handleLogout();
         }
       } else {
         setIsLoggedIn(false);
@@ -28,14 +25,10 @@ const Navbar = () => {
       }
     };
 
-    checkLoginStatus();
-
-    // Listen for storage changes (e.g., login/logout in another tab)
-    window.addEventListener('storage', checkLoginStatus);
+    checkAuthStatus();
+    window.addEventListener('storage', checkAuthStatus);
     
-    return () => {
-      window.removeEventListener('storage', checkLoginStatus);
-    };
+    return () => window.removeEventListener('storage', checkAuthStatus);
   }, []);
 
   const handleLogout = () => {
@@ -49,21 +42,28 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <Link to="/" className="navbar-logo">
-          EventHub
+          CommunityBoard
         </Link>
         
         <ul className="nav-menu">
+          {/* Always visible links */}
           <li className="nav-item">
             <Link to="/" className="nav-links">
               Home
             </Link>
           </li>
+          <li className="nav-item">
+            <Link to="/volunteer" className="nav-links">
+              Volunteers
+            </Link>
+          </li>
 
+          {/* Logged-in only links */}
           {isLoggedIn && (
             <>
               <li className="nav-item">
                 <Link to="/user" className="nav-links">
-                  Add Event
+                  Dashboard
                 </Link>
               </li>
               <li className="nav-item">
@@ -74,7 +74,24 @@ const Navbar = () => {
             </>
           )}
 
-          {!isLoggedIn && (
+          {/* Auth status display */}
+          {isLoggedIn ? (
+            <>
+              <li className="nav-item">
+                <span className="nav-links welcome-text">
+                  Hi, {user?.name || 'User'}
+                </span>
+              </li>
+              <li className="nav-item">
+                <button 
+                  onClick={handleLogout}
+                  className="nav-links logout-btn"
+                >
+                  Logout
+                </button>
+              </li>
+            </>
+          ) : (
             <>
               <li className="nav-item">
                 <Link to="/login" className="nav-links">
@@ -85,24 +102,6 @@ const Navbar = () => {
                 <Link to="/register" className="nav-links">
                   Register
                 </Link>
-              </li>
-            </>
-          )}
-
-          {isLoggedIn && (
-            <>
-              <li className="nav-item">
-                <span className="nav-links welcome-text">
-                  Welcome, {user?.name || 'User'}
-                </span>
-              </li>
-              <li className="nav-item">
-                <button 
-                  onClick={handleLogout}
-                  className="nav-links logout-btn"
-                >
-                  Logout
-                </button>
               </li>
             </>
           )}
