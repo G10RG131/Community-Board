@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './LoginForm.css';
 
-const LoginForm = ({ onLogin, error }) => {
+const LoginForm = ({ onLogin, error, loading = false }) => {
   const [credentials, setCredentials] = useState({
     email: '',
     password: ''
@@ -9,7 +9,7 @@ const LoginForm = ({ onLogin, error }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!credentials.email || !credentials.password) {
+    if (!credentials.email || !credentials.password || loading) {
       return;
     }
     onLogin(credentials);
@@ -22,6 +22,7 @@ const LoginForm = ({ onLogin, error }) => {
         placeholder="Email address"
         value={credentials.email}
         onChange={(e) => setCredentials({...credentials, email: e.target.value})}
+        disabled={loading}
         required
       />
       <input
@@ -29,10 +30,13 @@ const LoginForm = ({ onLogin, error }) => {
         placeholder="Password"
         value={credentials.password}
         onChange={(e) => setCredentials({...credentials, password: e.target.value})}
+        disabled={loading}
         required
       />
       {error && <div className="error-message">{error}</div>}
-      <button type="submit" className="login-button">Login</button>
+      <button type="submit" className="login-button" disabled={loading}>
+        {loading ? 'Logging in...' : 'Login'}
+      </button>
     </form>
   );
 };
