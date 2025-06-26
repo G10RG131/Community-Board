@@ -21,6 +21,8 @@ const EventSchema = z.object({
     .refine((d) => !isNaN(Date.parse(d)), { message: "Invalid date format" }),
   location: z.string().min(1),
   description: z.string().optional(),
+  image: z.string().optional().or(z.literal("")), // Allow empty string or valid string
+  volunteerPositions: z.array(z.string()).optional(),
 });
 
 const EventUpdateSchema = EventSchema.partial()

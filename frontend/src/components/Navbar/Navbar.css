@@ -55,6 +55,16 @@
   transform: translateY(-3px);
 }
 
+.welcome-text {
+  color: #4CAF50 !important;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.welcome-text:hover {
+  transform: none !important;
+}
+
 .logout-btn {
   background: none;
   border: none;
