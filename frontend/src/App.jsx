@@ -6,7 +6,8 @@ import RegisterPage from './pages/RegisterPage';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import PendingEvents from './pages/PendingEvents';
-import VolunteerPage from './pages/VolunteerPage'; // New import
+import VolunteerPage from './pages/VolunteerPage';
+import MyEventsPage from './pages/MyEventsPage';
 import './App.css';
 
 export default function App() {
@@ -19,9 +20,9 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/user" element={<UserDashboard />} />
+          <Route path="/my-events" element={<MyEventsPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/pending-events" element={<PendingEvents />} />
-          {/* New Volunteer Route */}
           <Route path="/volunteer" element={<VolunteerPage />} />
         </Routes>
       </main>

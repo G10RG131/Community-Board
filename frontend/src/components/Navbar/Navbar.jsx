@@ -60,11 +60,18 @@ const Navbar = () => {
           </li>
 
           {isLoggedIn && (
-            <li className="nav-item">
-              <Link to="/user" className="nav-links">
-                Add Event
-              </Link>
-            </li>
+            <>
+              <li className="nav-item">
+                <Link to="/user" className="nav-links">
+                  Add Event
+                </Link>
+              </li>
+              <li className="nav-item">
+                <Link to="/my-events" className="nav-links">
+                  My Events
+                </Link>
+              </li>
+            </>
           )}
 
           {!isLoggedIn && (

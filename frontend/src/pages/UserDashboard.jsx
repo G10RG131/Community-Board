@@ -39,6 +39,9 @@ export default function UserDashboard() {
     setLoading(true);
 
     try {
+      // Get user data from localStorage
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
       // Combine date and time into ISO string
       const dateTimeString = `${event.date}T${event.time}:00.000Z`;
       
@@ -55,6 +58,9 @@ export default function UserDashboard() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-user-id': user.id?.toString() || '',
+          'x-user-name': user.name || '',
+          'x-user-email': user.email || ''
         },
         body: JSON.stringify(eventData)
       });

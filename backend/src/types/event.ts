@@ -9,6 +9,7 @@ export interface Event {
   description?: string;
   image?: string;      // URL to event image
   volunteerPositions?: string[];  // Array of volunteer position names
+  userId?: number;     // ID of the user who created this event
 }
 
 // this empty export ensures TS treats this file as a module
