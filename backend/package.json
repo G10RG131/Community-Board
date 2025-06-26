@@ -9,6 +9,8 @@
         "migrate": "node-pg-migrate up -e dev",
         "migrate:create": "node-pg-migrate create",
         "migrate:down": "node-pg-migrate down -e dev",
+        "db:setup": "node scripts/setup-database.js",
+        "db:init": "node scripts/setup-dev.js",
         "test": "jest --detectOpenHandles --forceExit"
     },
     "dependencies": {
