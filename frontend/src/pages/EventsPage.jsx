@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import EventCard from '../components/EventCard/EventCard';
+import SearchAndFilter from '../components/SearchAndFilter/SearchAndFilter';
 import './EventsPage.css';
 
 export default function EventsPage() {
@@ -7,10 +8,10 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchEvents = async () => {
+  const fetchEvents = async (url = 'http://localhost:4000/events') => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:4000/events');
+      const response = await fetch(url);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch events: ${response.status}`);
@@ -37,6 +38,24 @@ export default function EventsPage() {
     }
   };
 
+  const handleSearch = (searchTerm) => {
+    if (searchTerm.trim() === '') {
+      fetchEvents(); // Reset to all events if search is empty
+    } else {
+      fetchEvents(`http://localhost:4000/events/search?q=${encodeURIComponent(searchTerm)}`);
+    }
+  };
+
+  const handleFilter = (filters) => {
+    const params = new URLSearchParams();
+    if (filters.dateFrom) params.append('dateFrom', filters.dateFrom);
+    if (filters.dateTo) params.append('dateTo', filters.dateTo);
+    if (filters.location) params.append('location', filters.location);
+    
+    const queryString = params.toString();
+    fetchEvents(queryString ? `http://localhost:4000/events/filter?${queryString}` : 'http://localhost:4000/events');
+  };
+
   useEffect(() => {
     fetchEvents();
   }, []);
@@ -48,6 +67,12 @@ export default function EventsPage() {
           <h1 className="display-4 fw-bold text-dark">Upcoming Events</h1>
         </div>
       </div>
+      
+      {/* Add SearchAndFilter component */}
+      <SearchAndFilter 
+        onSearch={handleSearch} 
+        onFilter={handleFilter} 
+      />
       
       {loading && (
         <div className="row">
@@ -68,7 +93,7 @@ export default function EventsPage() {
                 <i className="fas fa-exclamation-triangle me-2"></i>
                 Error: {error}
               </div>
-              <button className="btn btn-outline-danger btn-sm" onClick={fetchEvents}>
+              <button className="btn btn-outline-danger btn-sm" onClick={() => fetchEvents()}>
                 <i className="fas fa-redo me-1"></i>
                 Retry
               </button>
@@ -82,7 +107,7 @@ export default function EventsPage() {
           <div className="col-12 text-center">
             <div className="alert alert-info" role="alert">
               <i className="fas fa-info-circle me-2"></i>
-              No events found. Check back later!
+              No events found. Try adjusting your search or filters.
             </div>
           </div>
         </div>

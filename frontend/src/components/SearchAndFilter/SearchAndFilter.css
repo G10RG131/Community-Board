@@ -1,0 +1,12 @@
+/* frontend/src/components/SearchAndFilter/SearchAndFilter.css */
+.search-filter-container {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filter-form {
+  margin-top: 1rem;
+  background-color: white;
+}

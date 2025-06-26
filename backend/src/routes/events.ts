@@ -8,8 +8,11 @@ import {
   createEvent,
   updateEventById,
   deleteEventById,
+  getEventsByUserId,
+  checkEventOwnership,
 } from "../data/eventsStore";
 import { validateBody } from "../middleware/validateBody";
+import { requireAuth, optionalAuth, AuthenticatedRequest } from "../middleware/auth";
 
 const router = Router();
 
@@ -21,6 +24,8 @@ const EventSchema = z.object({
     .refine((d) => !isNaN(Date.parse(d)), { message: "Invalid date format" }),
   location: z.string().min(1),
   description: z.string().optional(),
+  image: z.string().optional().or(z.literal("")), // Allow empty string or valid string
+  volunteerPositions: z.array(z.string()).optional(),
 });
 
 const EventUpdateSchema = EventSchema.partial()
@@ -33,6 +38,16 @@ router.get("/", async (_req, res, next) => {
   try {
     const all = await getEvents();
     res.json(all);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** GET  /events/my    → get current user's events */
+router.get("/my", requireAuth, async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const userEvents = await getEventsByUserId(req.user!.id);
+    res.json(userEvents);
   } catch (e) {
     next(e);
   }
@@ -52,10 +67,11 @@ router.get("/:id", async (req, res, next) => {
 /** POST /events       → create */
 router.post(
   "/",
+  requireAuth,
   validateBody(EventSchema),
-  async (req, res, next) => {
+  async (req: AuthenticatedRequest, res, next) => {
     try {
-      const created = await createEvent(req.body as Event);
+      const created = await createEvent(req.body as Event, req.user!.id);
       res.status(201).json(created);
     } catch (e) {
       next(e);
@@ -66,9 +82,16 @@ router.post(
 /** PATCH /events/:id  → update */
 router.patch(
   "/:id",
+  requireAuth,
   validateBody(EventUpdateSchema),
-  async (req, res, next) => {
+  async (req: AuthenticatedRequest, res, next) => {
     try {
+      // Check if user owns the event
+      const isOwner = await checkEventOwnership(req.params.id, req.user!.id);
+      if (!isOwner) {
+        return res.status(403).json({ error: "You can only update your own events" });
+      }
+
       const updated = await updateEventById(
         req.params.id,
         req.body as Partial<Omit<Event, "id">>
@@ -82,8 +105,14 @@ router.patch(
 );
 
 /** DELETE /events/:id → remove */
-router.delete("/:id", async (req, res, next) => {
+router.delete("/:id", requireAuth, async (req: AuthenticatedRequest, res, next) => {
   try {
+    // Check if user owns the event
+    const isOwner = await checkEventOwnership(req.params.id, req.user!.id);
+    if (!isOwner) {
+      return res.status(403).json({ error: "You can only delete your own events" });
+    }
+
     const deleted = await deleteEventById(req.params.id);
     if (!deleted) return res.status(404).json({ error: "Event not found" });
     res.json(deleted);
@@ -93,3 +122,34 @@ router.delete("/:id", async (req, res, next) => {
 });
 
 export default router;
+
+// Add these new routes to events.ts
+
+/** GET /events/search?q=term → search events */
+router.get("/search", async (req, res, next) => {
+  try {
+    const searchTerm = req.query.q as string;
+    if (!searchTerm) {
+      return res.status(400).json({ error: "Search term is required" });
+    }
+    const results = await searchEvents(searchTerm);
+    res.json(results);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/** GET /events/filter → filter events */
+router.get("/filter", async (req, res, next) => {
+  try {
+    const { dateFrom, dateTo, location } = req.query;
+    const results = await filterEvents({
+      dateFrom: dateFrom as string | undefined,
+      dateTo: dateTo as string | undefined,
+      location: location as string | undefined
+    });
+    res.json(results);
+  } catch (e) {
+    next(e);
+  }
+});
