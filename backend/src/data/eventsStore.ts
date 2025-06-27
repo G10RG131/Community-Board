@@ -1,284 +1,182 @@
 // src/data/eventsStore.ts
-import { randomUUID } from "crypto";
-import { pool } from "../db";
-import type { Event } from "../types/event";
-import { cleanupRemovedPositions } from "./volunteerStore";
+import { randomUUID } from 'crypto';
+import { pool } from '../db';
+import type { Event } from '../types/event';
+import { cleanupRemovedPositions } from './volunteerStore';
 
-export async function createEvent(
-  input: Omit<Event, "id">,
-  userId?: number
-): Promise<Event> {
-  const newId = randomUUID();          
-  const { rows } = await pool.query(
-    `INSERT INTO events (id, title, date, location, description, image, volunteer_positions, user_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-     RETURNING id, title, date, location, description, image, volunteer_positions, user_id`,
-    [newId, input.title, input.date, input.location, input.description, input.image, JSON.stringify(input.volunteerPositions || []), userId]
-  );
-  
-  // Transform database result to Event interface
-  const dbEvent = rows[0];
-  let volunteerPositions = [];
+/**
+ * Normalize a raw DB row into our Event interface.
+ */
+function parseDbEvent(db: any): Event {
+  let volunteerPositions: string[] = [];
   try {
-    if (dbEvent.volunteer_positions) {
-      if (typeof dbEvent.volunteer_positions === 'string') {
-        volunteerPositions = JSON.parse(dbEvent.volunteer_positions);
-      } else if (Array.isArray(dbEvent.volunteer_positions)) {
-        volunteerPositions = dbEvent.volunteer_positions;
+    if (db.volunteer_positions) {
+      if (typeof db.volunteer_positions === 'string') {
+        volunteerPositions = JSON.parse(db.volunteer_positions);
+      } else if (Array.isArray(db.volunteer_positions)) {
+        volunteerPositions = db.volunteer_positions;
       }
     }
   } catch (error) {
-    console.warn('Failed to parse volunteer_positions in createEvent:', error);
-    volunteerPositions = [];
+    console.warn('Failed to parse volunteer_positions:', error);
   }
 
   return {
-    id: dbEvent.id,
-    title: dbEvent.title,
-    date: dbEvent.date,
-    location: dbEvent.location,
-    description: dbEvent.description,
-    image: dbEvent.image,
+    id: db.id,
+    title: db.title,
+    date: db.date.toISOString(),
+    location: db.location,
+    description: db.description,
+    image: db.image,
     volunteerPositions,
-    userId: dbEvent.user_id
+    userId: db.user_id,
+    status: db.status,
+    submittedAt: db.submitted_at.toISOString(),
+    approvedBy: db.approved_by ?? undefined,
+    createdAt: db.created_at.toISOString(),
+    updatedAt: db.updated_at.toISOString(),
   };
 }
 
-export async function getEvents(): Promise<Event[]> {
+/**
+ * List pending events for admin review.
+ */
+export async function getPendingEvents(): Promise<Event[]> {
   const { rows } = await pool.query(
-    `SELECT id, title, date, location, description, image, volunteer_positions, user_id
-     FROM events
-     ORDER BY date`
+    `SELECT * FROM events WHERE status = 'pending' ORDER BY submitted_at DESC`
   );
-  
-  // Transform database results to Event interface
-  return rows.map(dbEvent => {
-    let volunteerPositions = [];
-    try {
-      if (dbEvent.volunteer_positions) {
-        // Handle both string and already parsed array
-        if (typeof dbEvent.volunteer_positions === 'string') {
-          volunteerPositions = JSON.parse(dbEvent.volunteer_positions);
-        } else if (Array.isArray(dbEvent.volunteer_positions)) {
-          volunteerPositions = dbEvent.volunteer_positions;
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to parse volunteer_positions for event', dbEvent.id, ':', error);
-      volunteerPositions = [];
-    }
-
-    return {
-      id: dbEvent.id,
-      title: dbEvent.title,
-      date: dbEvent.date,
-      location: dbEvent.location,
-      description: dbEvent.description,
-      image: dbEvent.image,
-      volunteerPositions,
-      userId: dbEvent.user_id
-    };
-  });
+  return rows.map(parseDbEvent);
 }
 
 /**
- * Delete the event with the given ID.
- * @param id Event UUID
- * @returns The deleted event, or null if none existed.
+ * Approve a pending event.
  */
-export async function deleteEventById(id: string): Promise<Event | null> {
-    const { rows } = await pool.query(
-      `DELETE FROM events
-       WHERE id = $1
-       RETURNING id, title, date, location, description, image, volunteer_positions, user_id`,
-      [id]
-    );
-    
-    if (rows.length === 0) return null;
-    
-    const dbEvent = rows[0];
-    let volunteerPositions = [];
-    try {
-      if (dbEvent.volunteer_positions) {
-        if (typeof dbEvent.volunteer_positions === 'string') {
-          volunteerPositions = JSON.parse(dbEvent.volunteer_positions);
-        } else if (Array.isArray(dbEvent.volunteer_positions)) {
-          volunteerPositions = dbEvent.volunteer_positions;
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to parse volunteer_positions in deleteEventById:', error);
-      volunteerPositions = [];
-    }
-
-    return {
-      id: dbEvent.id,
-      title: dbEvent.title,
-      date: dbEvent.date,
-      location: dbEvent.location,
-      description: dbEvent.description,
-      image: dbEvent.image,
-      volunteerPositions,
-      userId: dbEvent.user_id
-    };
-}
-
-/**
- * Fetch a single event by its ID.
- * @param id Event UUID
- * @returns The event, or null if none found.
- */
-export async function getEventById(id: string): Promise<Event | null> {
-    const { rows } = await pool.query(
-      `SELECT id, title, date, location, description, image, volunteer_positions, user_id
-       FROM events
-       WHERE id = $1`,
-      [id]
-    );
-    
-    if (rows.length === 0) return null;
-    
-    const dbEvent = rows[0];
-    let volunteerPositions = [];
-    try {
-      if (dbEvent.volunteer_positions) {
-        if (typeof dbEvent.volunteer_positions === 'string') {
-          volunteerPositions = JSON.parse(dbEvent.volunteer_positions);
-        } else if (Array.isArray(dbEvent.volunteer_positions)) {
-          volunteerPositions = dbEvent.volunteer_positions;
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to parse volunteer_positions in getEventById:', error);
-      volunteerPositions = [];
-    }
-
-    return {
-      id: dbEvent.id,
-      title: dbEvent.title,
-      date: dbEvent.date,
-      location: dbEvent.location,
-      description: dbEvent.description,
-      image: dbEvent.image,
-      volunteerPositions,
-      userId: dbEvent.user_id
-    };
-}
-  
- /**
- * Update any subset of {title, date, location, description} on an event.
- * Returns the updated row, or null if the ID wasn’t found.
- */
-export async function updateEventById(
-    id: string,
-    updates: Partial<Omit<Event, "id">>
-  ): Promise<Event | null> {
-    // If volunteer positions are being updated, clean up registrations for removed positions
-    if (updates.volunteerPositions !== undefined) {
-      await cleanupRemovedPositions(id, updates.volunteerPositions);
-    }
-
-    const { rows } = await pool.query(
-      `UPDATE events
-         SET
-           title              = COALESCE($2, title),
-           date               = COALESCE($3, date),
-           location           = COALESCE($4, location),
-           description        = COALESCE($5, description),
-           image              = COALESCE($6, image),
-           volunteer_positions = COALESCE($7, volunteer_positions)
-       WHERE id = $1
-       RETURNING id, title, date, location, description, image, volunteer_positions, user_id`,
-      [
-        id,
-        updates.title,
-        updates.date,
-        updates.location,
-        updates.description,
-        updates.image,
-        updates.volunteerPositions ? JSON.stringify(updates.volunteerPositions) : null
-      ]
-    );
-    
-    if (rows.length === 0) return null;
-    
-    const dbEvent = rows[0];
-    let volunteerPositions = [];
-    try {
-      if (dbEvent.volunteer_positions) {
-        if (typeof dbEvent.volunteer_positions === 'string') {
-          volunteerPositions = JSON.parse(dbEvent.volunteer_positions);
-        } else if (Array.isArray(dbEvent.volunteer_positions)) {
-          volunteerPositions = dbEvent.volunteer_positions;
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to parse volunteer_positions in updateEventById:', error);
-      volunteerPositions = [];
-    }
-
-    return {
-      id: dbEvent.id,
-      title: dbEvent.title,
-      date: dbEvent.date,
-      location: dbEvent.location,
-      description: dbEvent.description,
-      image: dbEvent.image,
-      volunteerPositions,
-      userId: dbEvent.user_id
-    };
-}
-
-/**
- * Get all events created by a specific user
- */
-export async function getEventsByUserId(userId: number): Promise<Event[]> {
+export async function approveEventById(
+  id: string,
+  adminUserId: number
+): Promise<Event | null> {
   const { rows } = await pool.query(
-    `SELECT id, title, date, location, description, image, volunteer_positions, user_id
-     FROM events
-     WHERE user_id = $1
-     ORDER BY date`,
+    `UPDATE events
+     SET status = 'approved', approved_by = $2, updated_at = NOW()
+     WHERE id = $1 AND status = 'pending'
+     RETURNING *`,
+    [id, adminUserId]
+  );
+  return rows[0] ? parseDbEvent(rows[0]) : null;
+}
+
+/**
+ * Decline a pending event.
+ */
+export async function declineEventById(id: string): Promise<Event | null> {
+  const { rows } = await pool.query(
+    `UPDATE events
+     SET status = 'declined', updated_at = NOW()
+     WHERE id = $1 AND status = 'pending'
+     RETURNING *`,
+    [id]
+  );
+  return rows[0] ? parseDbEvent(rows[0]) : null;
+}
+
+// ---------------- Existing CRUD below ----------------
+
+export async function createEvent(
+  input: Omit<Event, 'id'>,
+  userId?: number
+): Promise<Event> {
+  const newId = randomUUID();
+  const { rows } = await pool.query<any>(
+    `INSERT INTO events
+       (id, title, date, location, description, image, volunteer_positions, user_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+     RETURNING *`,
+    [
+      newId,
+      input.title,
+      input.date,
+      input.location,
+      input.description,
+      input.image,
+      JSON.stringify(input.volunteerPositions || []),
+      userId
+    ]
+  );
+  return parseDbEvent(rows[0]);
+}
+
+export async function getEvents(): Promise<Event[]> {
+  const { rows } = await pool.query<any>(
+    `SELECT * FROM events ORDER BY date`
+  );
+  return rows.map(parseDbEvent);
+}
+
+export async function getEventById(id: string): Promise<Event | null> {
+  const { rows } = await pool.query<any>(
+    `SELECT * FROM events WHERE id = $1`,
+    [id]
+  );
+  return rows[0] ? parseDbEvent(rows[0]) : null;
+}
+
+export async function updateEventById(
+  id: string,
+  updates: Partial<Omit<Event, 'id'>>
+): Promise<Event | null> {
+  if (updates.volunteerPositions) {
+    await cleanupRemovedPositions(id, updates.volunteerPositions);
+  }
+  const { rows } = await pool.query<any>(
+    `UPDATE events
+       SET
+         title               = COALESCE($2, title),
+         date                = COALESCE($3, date),
+         location            = COALESCE($4, location),
+         description         = COALESCE($5, description),
+         image               = COALESCE($6, image),
+         volunteer_positions = COALESCE($7, volunteer_positions),
+         updated_at          = NOW()
+     WHERE id = $1
+     RETURNING *`,
+    [
+      id,
+      updates.title,
+      updates.date,
+      updates.location,
+      updates.description,
+      updates.image,
+      updates.volunteerPositions
+        ? JSON.stringify(updates.volunteerPositions)
+        : null,
+    ]
+  );
+  return rows[0] ? parseDbEvent(rows[0]) : null;
+}
+
+export async function deleteEventById(id: string): Promise<Event | null> {
+  const { rows } = await pool.query<any>(
+    `DELETE FROM events WHERE id = $1 RETURNING *`,
+    [id]
+  );
+  return rows[0] ? parseDbEvent(rows[0]) : null;
+}
+
+export async function getEventsByUserId(userId: number): Promise<Event[]> {
+  const { rows } = await pool.query<any>(
+    `SELECT * FROM events WHERE user_id = $1 ORDER BY date`,
     [userId]
   );
-  
-  // Transform database results to Event interface
-  return rows.map(dbEvent => {
-    let volunteerPositions = [];
-    try {
-      if (dbEvent.volunteer_positions) {
-        if (typeof dbEvent.volunteer_positions === 'string') {
-          volunteerPositions = JSON.parse(dbEvent.volunteer_positions);
-        } else if (Array.isArray(dbEvent.volunteer_positions)) {
-          volunteerPositions = dbEvent.volunteer_positions;
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to parse volunteer_positions for event', dbEvent.id, ':', error);
-      volunteerPositions = [];
-    }
-
-    return {
-      id: dbEvent.id,
-      title: dbEvent.title,
-      date: dbEvent.date,
-      location: dbEvent.location,
-      description: dbEvent.description,
-      image: dbEvent.image,
-      volunteerPositions,
-      userId: dbEvent.user_id
-    };
-  });
+  return rows.map(parseDbEvent);
 }
 
-/**
- * Check if a user owns an event
- */
-export async function checkEventOwnership(eventId: string, userId: number): Promise<boolean> {
+export async function checkEventOwnership(
+  eventId: string,
+  userId: number
+): Promise<boolean> {
   const { rows } = await pool.query(
-    `SELECT user_id FROM events WHERE id = $1`,
-    [eventId]
+    `SELECT 1 FROM events WHERE id = $1 AND user_id = $2`,
+    [eventId, userId]
   );
-  
-  return rows.length > 0 && rows[0].user_id === userId;
+  return rows.length > 0;
 }
-

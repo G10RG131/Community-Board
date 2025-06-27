@@ -1,38 +1,26 @@
-/**
- * A user in our community board system.
- */
-export interface User {
-  id: number;          // Auto-incrementing primary key
-  name: string;        // Full name of the user
-  email: string;       // Email address (unique)
-  password: string;    // Hashed password
-}
+// src/types/user.ts
 
 /**
- * User data for registration (without id and with plain password)
+ * A user account in our community board.
  */
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: 'user' | 'admin';         // new field
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Payload for registering a new user */
 export interface CreateUserInput {
   name: string;
   email: string;
   password: string;
 }
 
-/**
- * User data for login
- */
+/** Payload for logging in */
 export interface LoginInput {
   email: string;
   password: string;
 }
-
-/**
- * User data returned to client (without password)
- */
-export interface UserResponse {
-  id: number;
-  name: string;
-  email: string;
-}
-
-// this empty export ensures TS treats this file as a module
-export {};
