@@ -43,16 +43,25 @@ const mapRow = (r: RawEventRow): Event => ({
   approvedBy: r.approved_by,
 });
 
+/** Audit‐log an approval or rejection */
+async function logApproval(
+  eventId: string,
+  adminId: number,
+  action: "approved" | "rejected"
+) {
+  await pool.query(
+    `INSERT INTO event_approvals (event_id, admin_id, action)
+     VALUES ($1, $2, $3)`,
+    [eventId, adminId, action]
+  );
+}
+
 export async function getPendingEvents(): Promise<Event[]> {
   const { rows } = await pool.query<RawEventRow>(
-    `SELECT
-       id, title, date, location,
-       description, image,
-       volunteer_positions,
-       user_id,
-       status,
-       submitted_at,
-       approved_by
+    `SELECT id, title, date, location,
+            description, image,
+            volunteer_positions, user_id,
+            status, submitted_at, approved_by
      FROM events
      ORDER BY submitted_at`
   );
@@ -65,19 +74,18 @@ export async function approveEventById(
 ): Promise<Event | null> {
   const { rows } = await pool.query<RawEventRow>(
     `UPDATE events
-     SET status = 'approved', approved_by = $1
+     SET status = 'approved',
+         approved_by = $1
      WHERE id = $2
-     RETURNING
-       id, title, date, location,
-       description, image,
-       volunteer_positions,
-       user_id,
-       status,
-       submitted_at,
-       approved_by`,
+     RETURNING id, title, date, location,
+               description, image,
+               volunteer_positions, user_id,
+               status, submitted_at, approved_by`,
     [adminId, id]
   );
-  return rows[0] ? mapRow(rows[0]) : null;
+  if (!rows[0]) return null;
+  await logApproval(id, adminId, "approved");
+  return mapRow(rows[0]);
 }
 
 export async function rejectEventById(
@@ -86,17 +94,38 @@ export async function rejectEventById(
 ): Promise<Event | null> {
   const { rows } = await pool.query<RawEventRow>(
     `UPDATE events
-     SET status = 'rejected', approved_by = $1
+     SET status = 'rejected',
+         approved_by = $1
      WHERE id = $2
-     RETURNING
-       id, title, date, location,
-       description, image,
-       volunteer_positions,
-       user_id,
-       status,
-       submitted_at,
-       approved_by`,
+     RETURNING id, title, date, location,
+               description, image,
+               volunteer_positions, user_id,
+               status, submitted_at, approved_by`,
     [adminId, id]
   );
-  return rows[0] ? mapRow(rows[0]) : null;
+  if (!rows[0]) return null;
+  await logApproval(id, adminId, "rejected");
+  return mapRow(rows[0]);
+}
+
+/** Fetch the audit trail for a specific event */
+export async function getAuditLogs(
+  eventId: string
+): Promise<{ adminId: number; action: "approved" | "rejected"; timestamp: string }[]> {
+  const { rows } = await pool.query<{
+    admin_id: number;
+    action: string;
+    created_at: string;
+  }>(
+    `SELECT admin_id, action, created_at
+     FROM event_approvals
+     WHERE event_id = $1
+     ORDER BY created_at`,
+    [eventId]
+  );
+  return rows.map((r) => ({
+    adminId: r.admin_id,
+    action: r.action as "approved" | "rejected",
+    timestamp: r.created_at,
+  }));
 }

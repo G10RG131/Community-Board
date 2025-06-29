@@ -3,10 +3,11 @@ import { Router } from "express";
 import type { AuthenticatedRequest } from "../middleware/auth";
 import { requireAuth, requireAdmin } from "../middleware/auth";
 import {
-  getPendingEvents,
-  approveEventById,
-  rejectEventById,
-} from "../data/adminStore";
+  listPendingEvents,
+  approveEvent,
+  rejectEvent,
+} from "../services/adminService";
+import { getAuditLogs } from "../data/adminStore";
 import { asyncHandler } from "../utils/asyncHandler";
 import { ApiError } from "../utils/ApiError";
 import type { Event } from "../types/event";
@@ -20,7 +21,7 @@ router.use(requireAuth, requireAdmin);
 router.get(
   "/events/pending",
   asyncHandler(async (_req, res) => {
-    const pending: Event[] = await getPendingEvents();
+    const pending: Event[] = await listPendingEvents();
     res.json(pending);
   })
 );
@@ -29,11 +30,10 @@ router.get(
 router.post(
   "/events/:id/approve",
   asyncHandler(async (req, res) => {
-    const evt = await approveEventById(
+    const evt = await approveEvent(
       req.params.id,
       (req as AuthenticatedRequest).user.id
     );
-    if (!evt) throw new ApiError(404, "Event not found");
     res.json(evt);
   })
 );
@@ -42,12 +42,20 @@ router.post(
 router.post(
   "/events/:id/reject",
   asyncHandler(async (req, res) => {
-    const evt = await rejectEventById(
+    const evt = await rejectEvent(
       req.params.id,
       (req as AuthenticatedRequest).user.id
     );
-    if (!evt) throw new ApiError(404, "Event not found");
     res.json(evt);
+  })
+);
+
+// GET /admin/audit/:eventId
+router.get(
+  "/audit/:eventId",
+  asyncHandler(async (req, res) => {
+    const audit = await getAuditLogs(req.params.eventId);
+    res.json(audit);
   })
 );
 
