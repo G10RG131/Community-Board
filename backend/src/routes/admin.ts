@@ -1,5 +1,5 @@
 // src/routes/admin.ts
-import { Router, Response, NextFunction } from "express";
+import { Router } from "express";
 import type { AuthenticatedRequest } from "../middleware/auth";
 import { requireAuth, requireAdmin } from "../middleware/auth";
 import {
@@ -7,6 +7,8 @@ import {
   approveEventById,
   rejectEventById,
 } from "../data/adminStore";
+import { asyncHandler } from "../utils/asyncHandler";
+import { ApiError } from "../utils/ApiError";
 import type { Event } from "../types/event";
 
 const router = Router();
@@ -15,41 +17,38 @@ const router = Router();
 router.use(requireAuth, requireAdmin);
 
 // GET /admin/events/pending
-router.get("/events/pending", async (_req, res, next) => {
-  try {
+router.get(
+  "/events/pending",
+  asyncHandler(async (_req, res) => {
     const pending: Event[] = await getPendingEvents();
     res.json(pending);
-  } catch (err) {
-    next(err);
-  }
-});
+  })
+);
 
 // POST /admin/events/:id/approve
-router.post("/events/:id/approve", async (req, res, next) => {
-  try {
+router.post(
+  "/events/:id/approve",
+  asyncHandler(async (req, res) => {
     const evt = await approveEventById(
       req.params.id,
       (req as AuthenticatedRequest).user.id
     );
-    if (!evt) return res.status(404).json({ error: "Event not found" });
+    if (!evt) throw new ApiError(404, "Event not found");
     res.json(evt);
-  } catch (err) {
-    next(err);
-  }
-});
+  })
+);
 
 // POST /admin/events/:id/reject
-router.post("/events/:id/reject", async (req, res, next) => {
-  try {
+router.post(
+  "/events/:id/reject",
+  asyncHandler(async (req, res) => {
     const evt = await rejectEventById(
       req.params.id,
       (req as AuthenticatedRequest).user.id
     );
-    if (!evt) return res.status(404).json({ error: "Event not found" });
+    if (!evt) throw new ApiError(404, "Event not found");
     res.json(evt);
-  } catch (err) {
-    next(err);
-  }
-});
+  })
+);
 
 export default router;

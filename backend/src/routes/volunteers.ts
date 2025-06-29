@@ -11,35 +11,25 @@ import {
   getVolunteersForUserEvents,
   isUserRegistered,
 } from "../data/volunteerStore";
+import { ApiError } from "../utils/ApiError";
 
 const router = Router();
-
-// 🔐 protect all volunteer endpoints
 router.use(requireAuth);
 
-// —————————————————————————————
-// payload validation schema
-// —————————————————————————————
 const VolunteerRegistrationSchema = z.object({
   eventId: z.string().uuid(),
   position: z.string().min(1),
 });
 
-// —————————————————————————————
-// POST /volunteers/register
-// —————————————————————————————
 router.post(
   "/register",
-  validateBody(VolunteerRegistrationSchema),              // validateBody wraps Zod :contentReference[oaicite:2]{index=2}
+  validateBody(VolunteerRegistrationSchema),
   asyncHandler(async (req, res) => {
     const { eventId, position } = req.body;
     const userId = (req as AuthenticatedRequest).user.id;
 
-    // prevent duplicate sign-ups
     if (await isUserRegistered(eventId, userId, position)) {
-      return res
-        .status(400)
-        .json({ error: "Already registered for this position" });
+      throw new ApiError(400, "Already registered for this position");
     }
 
     const registration = await registerVolunteer({ eventId, position }, userId);
@@ -47,9 +37,6 @@ router.post(
   })
 );
 
-// —————————————————————————————
-// DELETE /volunteers/unregister
-// —————————————————————————————
 router.delete(
   "/unregister",
   validateBody(VolunteerRegistrationSchema),
@@ -59,16 +46,13 @@ router.delete(
 
     const success = await unregisterVolunteer(eventId, userId, position);
     if (!success) {
-      return res.status(404).json({ error: "Registration not found" });
+      throw new ApiError(404, "Registration not found");
     }
 
     res.json({ message: "Unregistered successfully" });
   })
 );
 
-// —————————————————————————————
-// GET /volunteers/:eventId
-// —————————————————————————————
 router.get(
   "/:eventId",
   asyncHandler(async (req, res) => {
@@ -77,14 +61,12 @@ router.get(
   })
 );
 
-// —————————————————————————————
-// GET /volunteers/my-events
-// —————————————————————————————
 router.get(
   "/my-events",
   asyncHandler(async (req, res) => {
-    const userId = (req as AuthenticatedRequest).user.id;
-    const lists = await getVolunteersForUserEvents(userId);
+    const lists = await getVolunteersForUserEvents(
+      (req as AuthenticatedRequest).user.id
+    );
     res.json(lists);
   })
 );
