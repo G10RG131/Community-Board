@@ -1,4 +1,5 @@
 // src/services/adminService.ts
+import { EventEmitter } from "events";
 import { ApiError } from "../utils/ApiError";
 import {
   getPendingEvents as storeGetPending,
@@ -9,17 +10,32 @@ import { sendEmail } from "./emailService";
 import { pool } from "../db";
 import type { Event } from "../types/event";
 
+// Event bus for moderation metrics
+export const adminBus = new EventEmitter();
+
 // List pending events
 export async function listPendingEvents(): Promise<Event[]> {
   return storeGetPending();
 }
 
-// Approve + throw 404 if missing + notify organizer
-export async function approveEvent(id: string, adminId: number): Promise<Event> {
-  const evt = await storeApprove(id, adminId);
+// Approve + throw 404 + notify organizer + pass reason + emit metric
+export async function approveEvent(
+  id: string,
+  adminId: number,
+  reason?: string
+): Promise<Event> {
+  const evt = await storeApprove(id, adminId, reason);
   if (!evt) throw new ApiError(404, "Event not found");
 
-  // Look up organizer email
+  // emit for metrics
+  adminBus.emit("moderation", {
+    action: "approved",
+    adminId,
+    eventId: id,
+    timestamp: new Date(),
+  });
+
+  // notify organizer
   if (evt.userId) {
     const { rows } = await pool.query<{ email: string }>(
       `SELECT email FROM users WHERE id = $1`,
@@ -30,7 +46,12 @@ export async function approveEvent(id: string, adminId: number): Promise<Event> 
       await sendEmail({
         to: email,
         subject: "Your event has been approved 🎉",
-        text: `Hi there,\n\nYour event "${evt.title}" was approved by our team. See you there!\n`,
+        text: `Hi there,
+
+Your event "${evt.title}" was approved by our team.${
+  reason ? `\n\nReason: ${reason}` : ""
+}
+`,
       });
     }
   }
@@ -38,12 +59,22 @@ export async function approveEvent(id: string, adminId: number): Promise<Event> 
   return evt;
 }
 
-// Reject + throw 404 if missing + notify organizer
-export async function rejectEvent(id: string, adminId: number): Promise<Event> {
-  const evt = await storeReject(id, adminId);
+// Reject + throw 404 + notify organizer + pass reason + emit metric
+export async function rejectEvent(
+  id: string,
+  adminId: number,
+  reason?: string
+): Promise<Event> {
+  const evt = await storeReject(id, adminId, reason);
   if (!evt) throw new ApiError(404, "Event not found");
 
-  // Look up organizer email
+  adminBus.emit("moderation", {
+    action: "rejected",
+    adminId,
+    eventId: id,
+    timestamp: new Date(),
+  });
+
   if (evt.userId) {
     const { rows } = await pool.query<{ email: string }>(
       `SELECT email FROM users WHERE id = $1`,
@@ -54,7 +85,13 @@ export async function rejectEvent(id: string, adminId: number): Promise<Event> {
       await sendEmail({
         to: email,
         subject: "Your event was rejected",
-        text: `Hi there,\n\nWe’re sorry to let you know your event "${evt.title}" was rejected. Please review our guidelines and resubmit.\n`,
+        text: `Hi there,
+
+Your event "${evt.title}" was rejected.${
+  reason ? `\n\nReason: ${reason}` : ""
+}
+Please review our guidelines and resubmit.
+`,
       });
     }
   }

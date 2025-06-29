@@ -47,12 +47,13 @@ const mapRow = (r: RawEventRow): Event => ({
 async function logApproval(
   eventId: string,
   adminId: number,
-  action: "approved" | "rejected"
+  action: "approved" | "rejected",
+  reason?: string
 ) {
   await pool.query(
-    `INSERT INTO event_approvals (event_id, admin_id, action)
-     VALUES ($1, $2, $3)`,
-    [eventId, adminId, action]
+    `INSERT INTO event_approvals (event_id, admin_id, action, reason)
+     VALUES ($1, $2, $3, $4)`,
+    [eventId, adminId, action, reason ?? null]
   );
 }
 
@@ -70,7 +71,8 @@ export async function getPendingEvents(): Promise<Event[]> {
 
 export async function approveEventById(
   id: string,
-  adminId: number
+  adminId: number,
+  reason?: string
 ): Promise<Event | null> {
   const { rows } = await pool.query<RawEventRow>(
     `UPDATE events
@@ -84,13 +86,14 @@ export async function approveEventById(
     [adminId, id]
   );
   if (!rows[0]) return null;
-  await logApproval(id, adminId, "approved");
+  await logApproval(id, adminId, "approved", reason);
   return mapRow(rows[0]);
 }
 
 export async function rejectEventById(
   id: string,
-  adminId: number
+  adminId: number,
+  reason?: string
 ): Promise<Event | null> {
   const { rows } = await pool.query<RawEventRow>(
     `UPDATE events
@@ -104,20 +107,21 @@ export async function rejectEventById(
     [adminId, id]
   );
   if (!rows[0]) return null;
-  await logApproval(id, adminId, "rejected");
+  await logApproval(id, adminId, "rejected", reason);
   return mapRow(rows[0]);
 }
 
 /** Fetch the audit trail for a specific event */
 export async function getAuditLogs(
   eventId: string
-): Promise<{ adminId: number; action: "approved" | "rejected"; timestamp: string }[]> {
+): Promise<{ adminId: number; action: "approved" | "rejected"; timestamp: string; reason?: string }[]> {
   const { rows } = await pool.query<{
     admin_id: number;
     action: string;
     created_at: string;
+    reason: string | null;
   }>(
-    `SELECT admin_id, action, created_at
+    `SELECT admin_id, action, created_at, reason
      FROM event_approvals
      WHERE event_id = $1
      ORDER BY created_at`,
@@ -127,5 +131,6 @@ export async function getAuditLogs(
     adminId: r.admin_id,
     action: r.action as "approved" | "rejected",
     timestamp: r.created_at,
+    reason: r.reason ?? undefined,
   }));
 }
