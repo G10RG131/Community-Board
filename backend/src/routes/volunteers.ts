@@ -11,9 +11,60 @@ import {
   getVolunteersForUserEvents,
   isUserRegistered,
 } from "../data/volunteerStore";
+import { getEvents } from "../data/eventsStore";
+import { nearbySearch, Place } from "../services/placesService";
+import { config } from "../config";
 import { ApiError } from "../utils/ApiError";
 
 const router = Router();
+
+// ── Public: search doesn’t require auth ────────────────────────────
+router.get(
+  "/search",
+  asyncHandler(async (req, res) => {
+    const SearchSchema = z.object({
+      lat: z
+        .string()
+        .refine((s) => !isNaN(Number(s)), { message: "lat must be a number" })
+        .optional(),
+      lng: z
+        .string()
+        .refine((s) => !isNaN(Number(s)), { message: "lng must be a number" })
+        .optional(),
+      radius: z
+        .string()
+        .refine((s) => !isNaN(Number(s)), { message: "radius must be a number" })
+        .optional()
+        .default("500"),
+      date: z.string().optional(),
+      tags: z.string().optional(), // comma-separated
+    });
+    const { lat, lng, radius, date, tags } = SearchSchema.parse(req.query);
+
+    let places: Place[] = [];
+    if (lat && lng) {
+      if (!config.googleApiKey) {
+        throw new ApiError(500, "Google API key not configured");
+      }
+      places = await nearbySearch(Number(lat), Number(lng), Number(radius));
+    }
+
+    let events = await getEvents();
+    if (date) {
+      events = events.filter((e) => e.date.startsWith(date));
+    }
+    if (tags) {
+      const tagList = tags.split(",");
+      events = events.filter((e) =>
+        tagList.every((t) => e.volunteerPositions.includes(t))
+      );
+    }
+
+    res.json({ places, events });
+  })
+);
+
+// ── All other volunteer endpoints require auth ───────────────────────
 router.use(requireAuth);
 
 const VolunteerRegistrationSchema = z.object({
@@ -21,6 +72,7 @@ const VolunteerRegistrationSchema = z.object({
   position: z.string().min(1),
 });
 
+// POST /volunteers/register
 router.post(
   "/register",
   validateBody(VolunteerRegistrationSchema),
@@ -37,6 +89,7 @@ router.post(
   })
 );
 
+// DELETE /volunteers/unregister
 router.delete(
   "/unregister",
   validateBody(VolunteerRegistrationSchema),
@@ -53,6 +106,7 @@ router.delete(
   })
 );
 
+// GET /volunteers/:eventId
 router.get(
   "/:eventId",
   asyncHandler(async (req, res) => {
@@ -61,12 +115,12 @@ router.get(
   })
 );
 
+// GET /volunteers/my-events
 router.get(
   "/my-events",
   asyncHandler(async (req, res) => {
-    const lists = await getVolunteersForUserEvents(
-      (req as AuthenticatedRequest).user.id
-    );
+    const userId = (req as AuthenticatedRequest).user.id;
+    const lists = await getVolunteersForUserEvents(userId);
     res.json(lists);
   })
 );

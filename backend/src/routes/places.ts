@@ -1,45 +1,35 @@
 // src/routes/places.ts
-import { Router, Request, Response, NextFunction } from "express";
-import { cache } from "../utils/cache";
+import { Router } from "express";
+import { z } from "zod";
+import { asyncHandler } from "../utils/asyncHandler";
+import { nearbySearch, Place } from "../services/placesService";
+import { ApiError } from "../utils/ApiError";
 
 const router = Router();
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
-const BASE_URL =
-  "https://maps.googleapis.com/maps/api/place/nearbysearch/json";
+
+const QuerySchema = z.object({
+  lat:    z.string().refine(s => !isNaN(Number(s)), { message: "lat must be a number" }),
+  lng:    z.string().refine(s => !isNaN(Number(s)), { message: "lng must be a number" }),
+  radius: z.string().refine(s => !isNaN(Number(s)), { message: "radius must be a number" }),
+  type:   z.string().optional(),
+});
 
 router.get(
-  "/",
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (!GOOGLE_API_KEY) {
-        return res
-          .status(500)
-          .json({ error: "Google API key not configured" });
-      }
+  "/nearby",
+  asyncHandler(async (req, res) => {
+    const q = QuerySchema.parse(req.query);
+    const lat = Number(q.lat),
+          lng = Number(q.lng),
+          radius = Number(q.radius),
+          type = q.type;
 
-      const { lat, lng, radius = "500" } = req.query;
-      if (!lat || !lng) {
-        return res
-          .status(400)
-          .json({ error: "lat and lng query parameters are required" });
-      }
-
-      const key = `places_${lat}_${lng}_${radius}`;
-      // let TypeScript infer the JSON type from the fetcher
-      const data = await cache(key, 60, async () => {
-        const url = `${BASE_URL}?location=${lat},${lng}&radius=${radius}&key=${GOOGLE_API_KEY}`;
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error(`Places API error: ${response.statusText}`);
-        }
-        return response.json();
-      });
-
-      res.json(data);
-    } catch (err) {
-      next(err);
+    if (!process.env.GOOGLE_API_KEY) {
+      throw new ApiError(500, "Google API key not configured");
     }
-  }
+
+    const places: Place[] = await nearbySearch(lat, lng, radius, type);
+    res.json(places);
+  })
 );
 
 export default router;

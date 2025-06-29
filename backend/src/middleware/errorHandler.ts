@@ -1,6 +1,7 @@
 // src/middleware/errorHandler.ts
 import { Request, Response, NextFunction } from "express";
 import { ApiError } from "../utils/ApiError";
+import { ZodError } from "zod";
 
 export function errorHandler(
   err: unknown,
@@ -8,11 +9,23 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ) {
-  console.error(err);
+  // Only log outside tests
+  if (process.env.NODE_ENV !== "test") {
+    console.error(err);
+  }
+
+  // Zod validation errors → 400
+  if (err instanceof ZodError) {
+    // pick first error message
+    const message = err.errors[0]?.message || "Invalid request";
+    return res.status(400).json({ error: message });
+  }
+
+  // our own ApiError → its statusCode
   if (err instanceof ApiError) {
-    // honor the statusCode & message you threw
     return res.status(err.statusCode).json({ error: err.message });
   }
-  // fallback to generic 500
+
+  // fallback
   res.status(500).json({ error: "Internal server error" });
 }
