@@ -1,89 +1,84 @@
 // src/data/usersStore.ts
-import { pool } from "../db";
-import bcrypt from "bcrypt";
-import type { User, CreateUserInput, LoginInput, UserResponse } from "../types/user";
+import { pool } from "../db"
+import bcrypt from "bcrypt"
+import type { CreateUserInput, LoginInput, UserResponse } from "../types/user"
 
 /**
- * Create a new user (registration)
+ * Insert a new user, hashing their password.
  */
 export async function createUser(input: CreateUserInput): Promise<UserResponse> {
-  // Hash the password
-  const saltRounds = 10;
-  const hashedPassword = await bcrypt.hash(input.password, saltRounds);
-
-  const { rows } = await pool.query<User>(
-    `INSERT INTO users (name, email, password)
-     VALUES ($1, $2, $3)
-     RETURNING id, name, email`,
-    [input.name, input.email, hashedPassword]
-  );
-  
-  return rows[0];
+  const hash = await bcrypt.hash(input.password, 10)
+  const { rows } = await pool.query<{
+    id: number
+    name: string
+    email: string
+    role: string
+  }>(
+    `INSERT INTO users (name, email, password, password_hash)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, name, email, role`,
+    [input.name, input.email, input.password, hash]
+  )
+  return rows[0]
 }
 
 /**
- * Get all users (without passwords)
+ * Fetch the full user row by email.
  */
-export async function getUsers(): Promise<UserResponse[]> {
-  const { rows } = await pool.query<UserResponse>(
-    `SELECT id, name, email FROM users ORDER BY name`
-  );
-  return rows;
-}
-
-/**
- * Get user by ID (without password)
- */
-export async function getUserById(id: number): Promise<UserResponse | null> {
-  const { rows } = await pool.query<UserResponse>(
-    `SELECT id, name, email FROM users WHERE id = $1`,
-    [id]
-  );
-  return rows[0] ?? null;
-}
-
-/**
- * Get user by email (with password for authentication)
- */
-export async function getUserByEmail(email: string): Promise<User | null> {
-  const { rows } = await pool.query<User>(
-    `SELECT id, name, email, password FROM users WHERE email = $1`,
+export async function getUserByEmail(
+  email: string
+): Promise<{
+  id: number
+  name: string
+  email: string
+  password: string | null
+  password_hash: string | null
+  role: string
+} | null> {
+  const { rows } = await pool.query<{
+    id: number
+    name: string
+    email: string
+    password: string | null
+    password_hash: string | null
+    role: string
+  }>(
+    `SELECT id, name, email, password, password_hash, role
+     FROM users WHERE email = $1`,
     [email]
-  );
-  return rows[0] ?? null;
+  )
+  return rows[0] || null
 }
 
 /**
- * Authenticate user login
+ * Verify credentials and return a UserResponse.
+ * If there's a bcrypt hash, compare against it; otherwise fall back to raw password.
  */
-export async function authenticateUser(input: LoginInput): Promise<UserResponse | null> {
-  const user = await getUserByEmail(input.email);
-  
-  if (!user) {
-    return null;
+export async function authenticateUser(
+  input: LoginInput
+): Promise<UserResponse> {
+  const rec = await getUserByEmail(input.email)
+  if (!rec) throw new Error("Invalid credentials")
+
+  if (rec.password_hash) {
+    const ok = await bcrypt.compare(input.password, rec.password_hash)
+    if (!ok) throw new Error("Invalid credentials")
+  } else {
+    if (rec.password !== input.password) throw new Error("Invalid credentials")
   }
 
-  const isValidPassword = await bcrypt.compare(input.password, user.password);
-  
-  if (!isValidPassword) {
-    return null;
-  }
-
-  // Return user without password
   return {
-    id: user.id,
-    name: user.name,
-    email: user.email
-  };
+    id: rec.id,
+    name: rec.name,
+    email: rec.email,
+    role: rec.role,
+  }
 }
 
 /**
- * Check if email already exists
+ * Check whether an email is already in use.
  */
 export async function emailExists(email: string): Promise<boolean> {
-  const { rows } = await pool.query(
-    `SELECT 1 FROM users WHERE email = $1 LIMIT 1`,
-    [email]
-  );
-  return rows.length > 0;
+  const rec = await getUserByEmail(email)
+  return !!rec
 }

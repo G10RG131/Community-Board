@@ -1,92 +1,92 @@
 // src/routes/volunteers.ts
 import { Router } from "express";
 import { z } from "zod";
-import {
-  registerVolunteer,
-  getVolunteersByEventId,
-  getVolunteersForUserEvents,
-  unregisterVolunteer,
-  isUserRegistered
-} from "../data/volunteerStore";
+import { asyncHandler } from "../utils/asyncHandler";
 import { requireAuth, AuthenticatedRequest } from "../middleware/auth";
 import { validateBody } from "../middleware/validateBody";
+import {
+  registerVolunteer,
+  unregisterVolunteer,
+  getVolunteersByEventId,
+  getVolunteersForUserEvents,
+  isUserRegistered,
+} from "../data/volunteerStore";
 
 const router = Router();
 
-// Volunteer registration schema
+// 🔐 protect all volunteer endpoints
+router.use(requireAuth);
+
+// —————————————————————————————
+// payload validation schema
+// —————————————————————————————
 const VolunteerRegistrationSchema = z.object({
-  eventId: z.string().uuid("Invalid event ID"),
-  position: z.string().min(1, "Position is required")
+  eventId: z.string().uuid(),
+  position: z.string().min(1),
 });
 
-/** POST /volunteers/register → Register as volunteer for a position */
+// —————————————————————————————
+// POST /volunteers/register
+// —————————————————————————————
 router.post(
   "/register",
-  requireAuth,
-  validateBody(VolunteerRegistrationSchema),
-  async (req: AuthenticatedRequest, res, next) => {
-    try {
-      const { eventId, position } = req.body;
-      const userId = req.user!.id;
+  validateBody(VolunteerRegistrationSchema),              // validateBody wraps Zod :contentReference[oaicite:2]{index=2}
+  asyncHandler(async (req, res) => {
+    const { eventId, position } = req.body;
+    const userId = (req as AuthenticatedRequest).user.id;
 
-      // Check if user is already registered for this position
-      const alreadyRegistered = await isUserRegistered(eventId, userId, position);
-      if (alreadyRegistered) {
-        return res.status(400).json({ 
-          error: "You are already registered for this position" 
-        });
-      }
-
-      const registration = await registerVolunteer({ eventId, position }, userId);
-      res.status(201).json(registration);
-    } catch (e) {
-      next(e);
+    // prevent duplicate sign-ups
+    if (await isUserRegistered(eventId, userId, position)) {
+      return res
+        .status(400)
+        .json({ error: "Already registered for this position" });
     }
-  }
+
+    const registration = await registerVolunteer({ eventId, position }, userId);
+    res.status(201).json(registration);
+  })
 );
 
-/** DELETE /volunteers/unregister → Unregister from a volunteer position */
+// —————————————————————————————
+// DELETE /volunteers/unregister
+// —————————————————————————————
 router.delete(
   "/unregister",
-  requireAuth,
   validateBody(VolunteerRegistrationSchema),
-  async (req: AuthenticatedRequest, res, next) => {
-    try {
-      const { eventId, position } = req.body;
-      const userId = req.user!.id;
+  asyncHandler(async (req, res) => {
+    const { eventId, position } = req.body;
+    const userId = (req as AuthenticatedRequest).user.id;
 
-      const success = await unregisterVolunteer(eventId, userId, position);
-      if (!success) {
-        return res.status(404).json({ 
-          error: "Volunteer registration not found" 
-        });
-      }
-
-      res.json({ message: "Successfully unregistered" });
-    } catch (e) {
-      next(e);
+    const success = await unregisterVolunteer(eventId, userId, position);
+    if (!success) {
+      return res.status(404).json({ error: "Registration not found" });
     }
-  }
+
+    res.json({ message: "Unregistered successfully" });
+  })
 );
 
-/** GET /volunteers/event/:eventId → Get all volunteers for an event */
-router.get("/event/:eventId", async (req, res, next) => {
-  try {
-    const volunteers = await getVolunteersByEventId(req.params.eventId);
-    res.json(volunteers);
-  } catch (e) {
-    next(e);
-  }
-});
+// —————————————————————————————
+// GET /volunteers/:eventId
+// —————————————————————————————
+router.get(
+  "/:eventId",
+  asyncHandler(async (req, res) => {
+    const list = await getVolunteersByEventId(req.params.eventId);
+    res.json(list);
+  })
+);
 
-/** GET /volunteers/my-events → Get volunteers for current user's events */
-router.get("/my-events", requireAuth, async (req: AuthenticatedRequest, res, next) => {
-  try {
-    const eventVolunteers = await getVolunteersForUserEvents(req.user!.id);
-    res.json(eventVolunteers);
-  } catch (e) {
-    next(e);
-  }
-});
+// —————————————————————————————
+// GET /volunteers/my-events
+// —————————————————————————————
+router.get(
+  "/my-events",
+  asyncHandler(async (req, res) => {
+    const userId = (req as AuthenticatedRequest).user.id;
+    const lists = await getVolunteersForUserEvents(userId);
+    res.json(lists);
+  })
+);
 
 export default router;

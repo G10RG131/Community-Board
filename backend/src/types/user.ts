@@ -1,26 +1,43 @@
 // src/types/user.ts
 
 /**
- * A user account in our community board.
+ * The shape of a user record in the database.
+ * (Includes the hashed password field for internal use only.)
  */
 export interface User {
   id: number;
   name: string;
   email: string;
-  role: 'user' | 'admin';         // new field
-  createdAt: string;
-  updatedAt: string;
+  password_hash: string;
+  role: string;
+  created_at: string;
+  updated_at: string;
 }
 
-/** Payload for registering a new user */
+/**
+ * Input required to register a new user.
+ */
 export interface CreateUserInput {
   name: string;
   email: string;
   password: string;
 }
 
-/** Payload for logging in */
+/**
+ * Input required to log in.
+ */
 export interface LoginInput {
   email: string;
   password: string;
+}
+
+/**
+ * What we send back to clients after login/registration.
+ * Does NOT include any password or hash.
+ */
+export interface UserResponse {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
 }

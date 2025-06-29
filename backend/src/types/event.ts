@@ -1,22 +1,19 @@
 // src/types/event.ts
 
-/**
- * A calendar event in our community board.
- */
+export type EventStatus = "pending" | "approved" | "rejected";
+
 export interface Event {
-  id: string;                      // UUID
+  id: string;
   title: string;
-  date: string;                    // ISO timestamp
+  date: string;           // ISO 8601
   location: string;
   description?: string;
   image?: string;
-  volunteerPositions: string[];    // array of volunteer position names
-  userId: number;                  // ID of the submitting user
-  createdAt: string;               // ISO timestamp
-  updatedAt: string;               // ISO timestamp
+  volunteerPositions: string[];
+  userId?: number;
 
-  // ─── ADMIN WORKFLOW ───────────────────────────
-  status: 'pending' | 'approved' | 'declined';
-  submittedAt: string;             // when the event was submitted
-  approvedBy?: number;             // admin userId who approved
+  // Admin workflow
+  status: EventStatus;
+  submittedAt: string;    // ISO 8601 timestamp
+  approvedBy: number | null;
 }

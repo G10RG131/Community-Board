@@ -1,32 +1,37 @@
+// src/app.ts
+
 import express from "express";
 import cors from "cors";
-import morgan from "morgan";
-import eventsRouter from "./routes/events";
+
 import authRouter from "./routes/auth";
+import eventsRouter from "./routes/events";
 import volunteersRouter from "./routes/volunteers";
+import placesRouter from "./routes/places";
+import adminRouter from "./routes/admin";
+
 import { errorHandler } from "./middleware/errorHandler";
 
 export default function createApp() {
   const app = express();
 
-  // 1) Pre-route middleware
-  app.use(cors());            // allow cross-origin requests
-  app.use(express.json());    // parse JSON bodies
-  app.use(morgan("tiny"));    // simple HTTP request logger
+  app.use(cors());
+  app.use(express.json());
 
-  // 2) All /events routes (GET, POST, PATCH, DELETE)
-  app.use("/events", eventsRouter);
-  
-  // 3) All /auth routes (POST /login, POST /register)
   app.use("/auth", authRouter);
-
-  // 4) All /volunteers routes (POST /register, DELETE /unregister, GET /event/:id, GET /my-events)
+  app.use("/events", eventsRouter);
   app.use("/volunteers", volunteersRouter);
 
-  // 5) Catch-all 404
-  app.use((_req, res) => res.status(404).json({ error: "Not Found" }));
+  // only mount /places if key is set
+  if (process.env.GOOGLE_API_KEY) {
+    app.use("/places", placesRouter);
+  } else {
+    console.warn("GOOGLE_API_KEY is not set; skipping /places routes");
+  }
 
-  // 6) Centralized error handler
+  // admin approval
+  app.use("/admin", adminRouter);
+
+  // error handler (must be last)
   app.use(errorHandler);
 
   return app;
